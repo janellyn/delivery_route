@@ -1,0 +1,121 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="container py-1">
+  {% if not current_user.is_authenticated %}
+    <div class="text-center mb-5">
+      <h1 class="display-4">Ласкаво просимо до сервісу маршрутів!</h1>
+      <p class="lead">Будь ласка, увійдіть або зареєструйтесь, щоб продовжити.</p>
+    </div>
+
+    <div class="row justify-content-center">
+      <div class="col-md-5 mb-4">
+        <div class="card shadow">
+          <div class="card-header bg-primary text-white text-center">
+            <h5>Увійти</h5>
+          </div>
+          <div class="card-body">
+            <form method="POST" action="{{ url_for('auth.login') }}">
+              <div class="mb-3">
+                <label class="form-label">Ім’я користувача</label>
+                <input type="text" name="username" class="form-control" required>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Пароль</label>
+                <input type="password" name="password" class="form-control" required>
+              </div>
+              <button type="submit" class="btn btn-primary w-100">Увійти</button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-5 mb-4">
+        <div class="card shadow">
+          <div class="card-header bg-success text-white text-center">
+            <h5>Реєстрація</h5>
+          </div>
+          <div class="card-body">
+            <form method="POST" action="{{ url_for('auth.register') }}">
+              <div class="mb-3">
+                <label class="form-label">Ім’я користувача</label>
+                <input type="text" name="username" class="form-control" required>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Пароль</label>
+                <input type="password" name="password" class="form-control" required>
+              </div>
+              <button type="submit" class="btn btn-success w-100">Зареєструватись</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  {% else %}
+    <section class="advantages my-4">
+        <div class="container text-center">
+            <h2 class="mb-4">Переваги системи</h2>
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="advantage-item">
+                        <img src="/static/icons/route.png" alt="Маршрути" class="adv-icon" width="50" height="50">
+                        <p>Зручність у плануванні маршрутів</p>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="advantage-item">
+                        <img src="/static/icons/arrows.png" alt="Час" class="adv-icon" width="50" height="50">
+                        <p>Оптимізація часу доставки</p>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="advantage-item">
+                        <img src="/static/icons/planning.png" alt="HERE API" class="adv-icon" width="50" height="50">
+                        <p>Інтеграція з HERE API</p>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="advantage-item">
+                        <img src="/static/icons/travel-map.png" alt="Історія" class="adv-icon" width="50" height="50">
+                        <p>Аналіз історичних маршрутів</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h2>👋 Привіт, {{ current_user.username }}!</h2>
+      <div>
+        <a href="{{ url_for('routes.calculate_route') }}" class="btn btn-primary me-2">Розрахувати маршрут</a>
+        <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-danger">Вийти</a>
+      </div>
+    </div>
+
+
+
+    <div class="card shadow mb-4">
+      <div class="card-body">
+        <h5 class="card-title">🗺️ Карта</h5>
+        <div id="map" style="height: 400px;"></div>
+      </div>
+    </div>
+
+  {% endif %}
+</div>
+
+
+<script>
+  var map = L.map('map').setView([50.4501, 30.5234], 13);
+
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+  }).addTo(map);
+
+  {% if route_points %}
+    {% for lat, lon in route_points %}
+      L.marker([{{ lat }}, {{ lon }}]).addTo(map);
+    {% endfor %}
+  {% endif %}
+</script>
+{% endblock %}

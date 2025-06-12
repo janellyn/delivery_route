@@ -1,0 +1,56 @@
+{% extends "layout.html" %}
+{% block content %}
+<h2>Розрахунок маршруту</h2>
+<form method="POST" class="container mt-4">
+  <div class="mb-3">
+    <label class="form-label">Звідки:</label>
+    <input type="text" name="origin" list="origin-list" class="form-control" placeholder="наприклад, Maidan Nezalezhnosti" required>
+      <datalist id="origin-list">
+        {% for loc in recent_locations %}
+          <option value="{{ loc.origin }}"></option>
+        {% endfor %}
+      </datalist>
+  </div>
+
+  <div id="waypoints-container">
+    <label class="form-label">Проміжні точки:</label>
+    <div class="mb-3">
+      <input type="text" name="waypoints" class="form-control" placeholder="наприклад, Arsenalna">
+    </div>
+  </div>
+
+  <button type="button" class="btn btn-secondary mb-3" onclick="addWaypoint()">Додати ще точку</button>
+
+  <div class="mb-3">
+    <label class="form-label">Куди:</label>
+    <input type="text" name="destination" list="destination-list" class="form-control" placeholder="наприклад, River Mall" required>
+      <datalist id="destination-list">
+        {% for loc in recent_locations %}
+          <option value="{{ loc.destination }}"></option>
+        {% endfor %}
+      </datalist>
+  </div>
+
+  <div class="mb-4">
+    <label class="form-label">Обрати маршрут:</label>
+    <select name="route_type" class="form-select" required>
+      <option value="sidewalk">По тротуарам та по дорозі</option>
+      <option value="road">Тільки по дорозі</option>
+    </select>
+  </div>
+
+  <button type="submit" class="btn btn-primary">Розрахувати маршрут</button>
+</form>
+
+<script>
+function addWaypoint() {
+  const container = document.getElementById('waypoints-container');
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.name = 'waypoints';
+  input.className = 'form-control my-2';
+  input.placeholder = 'наприклад, Khreschatyk';
+  container.appendChild(input);
+}
+</script>
+{% endblock %}

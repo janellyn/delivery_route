@@ -1,0 +1,132 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<h2>Історія маршрутів</h2>
+
+{% if history %}
+<div class="mb-5">
+        <canvas id="distanceChart" height="100"></canvas>
+        <canvas id="durationChart" height="100" class="mt-4"></canvas>
+    </div>
+
+    <button class="btn btn-secondary mb-3" onclick="toggleHistory()">Показати/Приховати маршрути</button>
+
+    <div id="historyTable" style="display: none;">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Дата</th>
+                    <th>Звідки</th>
+                    <th>Куди</th>
+                    <th>Відстань (км)</th>
+                    <th>Час (хв)</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for route in history %}
+                <tr>
+                    <td>{{ route.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
+                    <td>{{ route.origin }}</td>
+                    <td>{{ route.destination }}</td>
+                    <td>{{ route.distance }}</td>
+                    <td>{{ route.duration }}</td>
+                    <td>
+                        <form class="delete-form" data-route-id="{{ route.id }}">
+                            <button type="submit" class="btn btn-danger btn-sm">Видалити</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        const labels = {{ labels | tojson }};
+        const distances = {{ distances | tojson }};
+        const durations = {{ durations | tojson }};
+
+        const distanceCtx = document.getElementById('distanceChart').getContext('2d');
+        new Chart(distanceCtx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Відстань (км)',
+                    data: distances,
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    tension: 0.3,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Відстань по маршрутах'
+                    }
+                }
+            }
+        });
+
+        const durationCtx = document.getElementById('durationChart').getContext('2d');
+        new Chart(durationCtx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Час (хв)',
+                    data: durations,
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                    tension: 0.3,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Час по маршрутах'
+                    }
+                }
+            }
+        });
+
+        function toggleHistory() {
+            const table = document.getElementById('historyTable');
+            table.style.display = table.style.display === 'none' ? 'block' : 'none';
+        }
+    </script>
+    <script>
+    document.querySelectorAll('.delete-form').forEach(form => {
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const routeId = this.dataset.routeId;
+            const row = this.closest('tr');
+
+            const response = await fetch(`/delete/${routeId}`, {
+                method: 'POST'
+            });
+
+            if (response.ok) {
+                row.remove();
+            } else {
+                alert('Не вдалося видалити маршрут');
+            }
+        });
+    });
+    </script>
+
+{% else %}
+    <p>Маршрутів поки немає.</p>
+{% endif %}
+
+{% endblock %}

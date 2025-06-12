@@ -1,0 +1,116 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container mt-4">
+
+  {% if error %}
+    <div class="alert alert-danger">{{ error }}</div>
+    <a href="{{ url_for('routes.calculate_route') }}" class="btn btn-secondary mt-3">Порахувати інший маршрут</a>
+  {% else %}
+    <div class="row align-items-start mb-3">
+    <div class="col-md-6">
+      {% if route_type == 'road' %}
+        <h3>Розраховано маршрут: Тільки по дорозі</h3>
+      {% elif route_type == 'sidewalk' %}
+        <h3>Розраховано маршрут: По тротуарам та по дорозі</h3>
+      {% else %}
+        <h3>Результат маршруту</h3>
+      {% endif %}
+    </div>
+  </div>
+
+    <div class="row" style:"flex-wrap:nowrap;">
+      <ul class="list-group mb-3" style="width:60%;">
+        <li class="list-group-item"><strong>Звідки:</strong> {{ origin }}</li>
+        <li class="list-group-item"><strong>Куди:</strong> {{ destination }}</li>
+        <li class="list-group-item">
+          <strong>Час в дорозі:</strong>
+          {% if duration >= 60 %}
+            {{ (duration // 60)|int }} год {{ (duration % 60)|round|int }} хв
+          {% else %}
+            {{ duration|round|int }} хвилин
+          {% endif %}
+        </li>
+        <li class="list-group-item"><strong>Відстань:</strong> {{ distance }} км</li>
+        <li class="list-group-item"><strong>Кількість зупинок:</strong> {{ stops }}</li>
+        <li class="list-group-item"><strong>Погода на старті:</strong> {{ weather }}</li>
+        <li class="list-group-item"><strong>Кількість точок на маршруті:</strong> {{ points | length }}</li>
+      </ul>
+      {% if routes|length > 1 %}
+      <div class="col-md-6" style="width: 40%;">
+        <div class="card border-info">
+          <div class="card-body py-2">
+            <h6 class="text-info">🔁 Альтернативний маршрут</h6>
+            <p class="mb-1">
+              <strong>Час в дорозі:</strong>
+              {% if routes[1].duration >= 60 %}
+                {{ (routes[1].duration // 60)|int }} год {{ (routes[1].duration % 60)|round|int }} хв
+              {% else %}
+                {{ routes[1].duration|round|int }} хв
+              {% endif %}
+            </p>
+            <p class="mb-1"><strong>Відстань:</strong> {{ routes[1].distance }} км</p>
+            <p class="mb-0"><strong>Колір:</strong> <span style="color: green;">зелений</span></p>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <ul class="mb-4"><strong>Зупинки:</strong>
+      {% for point in points %}
+        <li>{{ point }}</li>
+      {% endfor %}
+    </ul>
+
+    {% if traffic_status == 'ok' %}
+      <div class="alert alert-success">✅ Заторів не спостерігається.</div>
+    {% elif traffic_status == 'warning' %}
+      <div class="alert alert-warning">⚠️ Є затори на маршруті.</div>
+    {% elif traffic_status == 'critical' %}
+      <div class="alert alert-danger">❌ Сильні затори на маршруті!</div>
+    {% endif %}
+
+    <div id="map" style="height: 450px;" class="my-4 border rounded"></div>
+
+    <a href="{{ url_for('routes.calculate_route') }}" class="btn btn-primary">Розрахувати новий маршрут</a>
+
+    <script>
+      var map = L.map('map').setView([{{ coords[0][1] }}, {{ coords[0][0] }}], 13);
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© OpenStreetMap contributors'
+      }).addTo(map);
+
+      var coords = {{ coords | tojson }};
+      var points = {{ points | tojson }};
+      var routes = {{ routes | tojson }};
+
+      coords.forEach(function(coord, index) {
+        var lat = coord[1];
+        var lon = coord[0];
+        var label = (index === 0) ? "<b>Старт:</b> " + points[index] :
+                    (index === coords.length - 1) ? "<b>Фініш:</b> " + points[index] :
+                    "<b>Зупинка " + index + ":</b> " + points[index];
+        L.marker([lat, lon]).addTo(map).bindPopup(label);
+      });
+
+      var colors = ['blue', 'green', 'orange', 'purple'];
+
+      routes.forEach(function(route, i) {
+        var polyline = L.polyline(route.geometry, {
+          color: colors[i % colors.length],
+          weight: 4,
+          opacity: (i === 0 ? 0.9 : 0.5),
+          dashArray: (i === 0 ? null : "5, 10")
+        }).addTo(map);
+        polyline.bindPopup("Маршрут " + (i+1) + ": " + route.duration + " хв, " + route.distance + " км");
+      });
+
+      map.fitBounds(L.featureGroup(routes.map(r => L.polyline(r.geometry))).getBounds());
+    </script>
+
+  {% endif %}
+
+</div>
+{% endblock %}
